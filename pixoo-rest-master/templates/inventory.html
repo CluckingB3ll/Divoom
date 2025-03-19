@@ -4,10 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .dashboard {
+            width: 300px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h2 {
+            margin-bottom: 10px;
+        }
+        .box-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 90%;
+            padding: 10px;
+            border: 2px solid black;
+            border-radius: 5px;
+            background: #fff;
+        }
+        .box img {
+            width: 40px;
+            height: 40px;
+            image-rendering: pixelated; /* Ensures pixel-art looks sharp */
+        }
+        #animated-sprite {
+            width: 40px;
+            height: 40px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Inventory Dashboard</h1>
-    <p><strong>Computers Count:</strong> {{ computers_count }}</p>
-    <p><strong>Total Floor Area:</strong> {{ total_area }}</p>
+    <div class="dashboard">
+        <h2>Inventory Dashboard</h2>
+        
+        <div class="box-container">
+            <div class="box">
+                <img id="animated-sprite" src="{{ url_for('static', filename='animations/pixil-layer-0.png') }}" alt="Sprite">
+                <span>PCS: {{ computers_count }}</span>
+            </div>
+            
+            <div class="box">
+                <span>FLOOR: {{ total_area }}</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const frames = [
+            "{{ url_for('static', filename='animations/pixil-layer-0.png') }}",
+            "{{ url_for('static', filename='animations/pixil-layer-1.png') }}",
+            "{{ url_for('static', filename='animations/pixil-layer-2.png') }}",
+            "{{ url_for('static', filename='animations/pixil-layer-3.png') }}"
+        ];
+        let currentFrame = 0;
+
+        function animateSprite() {
+            document.getElementById("animated-sprite").src = frames[currentFrame];
+            currentFrame = (currentFrame + 1) % frames.length;
+        }
+
+        setInterval(animateSprite, 200); // Change frame every 200ms
+    </script>
 </body>
 </html>
