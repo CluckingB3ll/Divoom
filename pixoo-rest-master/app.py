@@ -1,87 +1,48 @@
 import os
-import sys
-import time
-import requests
-import json
-import base64
-
+from flask import Flask, render_template
 from dotenv import load_dotenv
-from flask import Flask, request, redirect, url_for, render_template  # Import render_template
-from flasgger import Swagger, swag_from
-from pixoo import Channel, Pixoo
-from PIL import Image
+from flasgger import Swagger
+from pixoo import Pixoo
 
-from swag import definitions
-from swag import passthrough
-
-import _helpers
-
+# Load environment variables
 load_dotenv()
 
-pixoo_host = os.environ.get('PIXOO_HOST', 'Pixoo64')
-pixoo_screen = int(os.environ.get('PIXOO_SCREEN_SIZE', 64))
-pixoo_debug = _helpers.parse_bool_value(os.environ.get('PIXOO_DEBUG', 'false'))
-pixoo_test_connection_retries = int(os.environ.get('PIXOO_TEST_CONNECTION_RETRIES', sys.maxsize))
-
-for connection_test_count in range(pixoo_test_connection_retries + 1):
-    if _helpers.try_to_request(f'http://{pixoo_host}/get'):
-        break
-    else:
-        if connection_test_count == pixoo_test_connection_retries:
-            sys.exit(f'Failed to connect to [{pixoo_host}]. Exiting.')
-        else:
-            time.sleep(30)
-
-pixoo = Pixoo(
-    pixoo_host,
-    pixoo_screen,
-    pixoo_debug
-)
+# Configure Pixoo
+pixoo_host = os.environ.get('PIXOO_HOST', '10.108.32.240')  # Replace with your Pixoo IP
+pixoo = Pixoo(pixoo_host)
 
 app = Flask(__name__)
-app.config['SWAGGER'] = _helpers.get_swagger_config()
+swagger = Swagger(app)
 
-swagger = Swagger(app, template=_helpers.get_additional_swagger_template())
-definitions.create(swagger)
-
-@app.route('/', methods=['GET'])
+@app.route('/')
 def home():
-    return redirect(url_for('flasgger.apidocs'))
+    return 'Pixoo Inventory Dashboard'
 
-@app.route('/health', methods=['GET'])
-def health():
-    return 'OK'
-
-# Inventory route
 @app.route('/inventory')
 def inventory():
-    # Flash the fixed values to the Divoom device
-    pixoo.draw_text_at_location_rgb(
-        "Number of Computers: 20",  # Text for number of computers
-        0,                             # X coordinate (adjust as needed)
-        0,                             # Y coordinate (adjust as needed)
-        255,                           # R value (for red color)
-        255,                           # G value (for green color)
-        255                            # B value (for blue color)
-    )
+    computers_count = 5  # Example count
+    total_area = "500 sqm"
 
-    pixoo.draw_text_at_location_rgb(
-        "Total Floor Area: 500 square meters",  # Text for total floor area
-        0,                                       # X coordinate (adjust as needed)
-        10,                                      # Y coordinate (adjust as needed)
-        255,                                     # R value (for red color)
-        255,                                     # G value (for green color)
-        255                                      # B value (for blue color)
-    )
+    # Set background to white
+    for y in range(64):
+        for x in range(64):
+            pixoo.draw_pixel_at_location_rgb(x, y, 255, 255, 255)  # White background
 
-    pixoo.push()  # Push the update to the Divoom device
-    return render_template('inventory.html')
+    # Draw Text at (10,10) pixels
+    pixoo.draw_text("PCs:", (10, 10), (0, 0, 0))  # Black text
+    pixoo.draw_text(f"{computers_count}", (50, 10), (0, 0, 0))  # Right-aligned number
 
-# ... (rest of your existing routes)
+    # Draw a Horizontal Line
+    for x in range(10, 54):  # Draw a line across the width
+        pixoo.draw_pixel_at_location_rgb(x, 25, 0, 0, 0)  # Black line at y=25
+
+    # Draw second row of text at (10,35)
+    pixoo.draw_text("FLOOR:", (10, 35), (0, 0, 0))  
+    pixoo.draw_text(f"{total_area}", (50, 35), (0, 0, 0))  
+
+    pixoo.push()  # Send update to Pixoo
+
+    return render_template('inventory.html', computers_count=computers_count, total_area=total_area)
 
 if __name__ == '__main__':
-    app.run(
-        debug=_helpers.parse_bool_value(os.environ.get('PIXOO_REST_DEBUG', 'false')),
-        host=os.environ.get('PIXOO_REST_HOST', '127.0.0.1'),
-        port=os.environ.get('PIXOO_REST_PORT', '5000')
-    )
+    app.run(debug=True, host='0.0.0.0', port=5000)
